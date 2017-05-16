@@ -1,25 +1,25 @@
-#include <iostream>
 #include "tools.h"
 
-using Eigen::VectorXd;
-using Eigen::MatrixXd;
-using std::vector;
+#include <stdexcept>
 
-Tools::Tools() {}
+Eigen::VectorXd Tools::CalculateRMSE(const std::vector<Eigen::VectorXd> &estimations,
+                                     const std::vector<Eigen::VectorXd> &ground_truth) {
 
-Tools::~Tools() {}
-
-VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
-                              const vector<VectorXd> &ground_truth) {
-  /**
-  TODO:
-    * Calculate the RMSE here.
-  */
-}
-
-MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
-  /**
-  TODO:
-    * Calculate a Jacobian here.
-  */
+  if (estimations.size() != ground_truth.size()) {
+    throw std::runtime_error("Estimations and ground truth must be of the same size");
+  }
+  
+  if (estimations.empty()) {
+    return Eigen::VectorXd(estimations[0].size());
+  }
+  
+  Eigen::VectorXd sum(estimations[0].size());
+  for (size_t i = 0; i < estimations.size(); ++i) {
+    Eigen::VectorXd res = estimations[i] - ground_truth[i];
+    res = res.array() * res.array();
+    sum += res;
+  }
+  
+  Eigen::VectorXd mean = sum / estimations.size();
+  return mean.array().sqrt();
 }
