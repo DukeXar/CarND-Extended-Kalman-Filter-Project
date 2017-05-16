@@ -14,32 +14,32 @@ Eigen::VectorXd ToRadarMeasurement(const Eigen::VectorXd &x) {
   
   Eigen::VectorXd result(3);
   
-  if (px == 0.0 && py == 0.0) {
-    // TODO(dukexar): warn
+  if (std::abs(px) == 0.0) {
     std::cout << "Warn: px==0 && py==0" << std::endl;
+    result << 0, 0, 0;
     return result;
   }
   
   double rho = sqrt(px * px + py * py);
   
   if (rho == 0.0) {
-    // TODO(dukexar): warn
     std::cout << "Warn: rho==0" << std::endl;
+    result << 0, 0, 0;
     return result;
   }
   
-  double ksi = atan2(py, px);
+  double phi = atan2(py, px);
   double rho_dot = (px * vx + py * vy) / rho;
   
-  result << rho, ksi, rho_dot;
+  result << rho, phi, rho_dot;
   return result;
 }
 
 Eigen::MatrixXd CalculateRadarJakobian(const Eigen::VectorXd &x) {
-  auto px = x(0);
-  auto py = x(1);
-  auto vx = x(2);
-  auto vy = x(3);
+  double px = x(0);
+  double py = x(1);
+  double vx = x(2);
+  double vy = x(3);
   
   double c1 = px * px + py * py;
   double c2 = sqrt(c1);
@@ -47,15 +47,27 @@ Eigen::MatrixXd CalculateRadarJakobian(const Eigen::VectorXd &x) {
   
   Eigen::MatrixXd result(3, 4);
   if (c1 == 0.0) {
-    // TODO(dukexar): warning
+    std::cout << "Warn: c1==0" << std::endl;
+    result << 0, 0, 0;
     return result;
   }
   
-  result << px / c2, py / c2, 0, 0,
-  -py / c1, px / c1, 0, 0,
-  py * (vx * py - vy * px) / c3, px * (px * vy - py * vx) / c3, px / c2, py / c2;
+  result <<
+    (px / c2), (py / c2), 0, 0,
+    (-py / c1), (px / c1), 0, 0,
+    (py * (vx * py - vy * px) / c3), (px * (px * vy - py * vx) / c3), (px / c2), (py / c2);
   return result;
 }
+  
+  double ClampPhi(double phi) {
+    while (phi < -M_PI) {
+      phi += 2*M_PI;
+    }
+    while (phi > M_PI) {
+      phi -= 2*M_PI;
+    }
+    return phi;
+  }
 
 } // namespace
 
@@ -63,34 +75,23 @@ RadarUpdater::RadarUpdater(const Eigen::MatrixXd &r) : r_(r) {
 }
 
 State RadarUpdater::Next(const Eigen::VectorXd &measurement, const State &state) {
+  Eigen::VectorXd y = measurement - ToRadarMeasurement(state.x);
+  y(1) = ClampPhi(y(1));
+  
+
   Eigen::MatrixXd hj = CalculateRadarJakobian(state.x);
   Eigen::MatrixXd hjt = hj.transpose();
-  
-  Eigen::VectorXd correctedMeasurement = measurement;
-  double ksi = measurement(1);
-
-  if (ksi < -M_PI) {
-    ksi += M_PI;
-  } else if (ksi > M_PI) {
-    ksi -= M_PI;
-  }
-  
-  correctedMeasurement(1) = ksi;
-  
-  Eigen::VectorXd y = measurement - ToRadarMeasurement(state.x);
   Eigen::MatrixXd s = hj * state.p * hjt + r_;
   Eigen::MatrixXd k = state.p * hjt * s.inverse();
-  
-  Eigen::MatrixXd I = Eigen::MatrixXd::Identity(state.x.size(), state.x.size());
+  auto I = Eigen::MatrixXd::Identity(hj.cols(), hj.cols());
   return State{state.x + k * y, (I - k * hj) * state.p};
 }
 
 State RadarUpdater::First(const Eigen::VectorXd &measurement, const State &state) {
   double rho = measurement(0);
-  double ksi = measurement(1);
-  double px = rho * cos(ksi);
-  double py = rho * sin(ksi);
+  double phi = measurement(1);
+  
   Eigen::VectorXd projected(4);
-  projected << px, py, 0, 0;
+  projected << rho * cos(phi), rho * sin(phi), 0, 0;
   return State{projected, state.p};
 }

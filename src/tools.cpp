@@ -13,11 +13,10 @@ Eigen::VectorXd Tools::CalculateRMSE(const std::vector<Eigen::VectorXd> &estimat
     return Eigen::VectorXd(estimations[0].size());
   }
   
-  Eigen::VectorXd sum(estimations[0].size());
+  Eigen::VectorXd sum = Eigen::VectorXd::Zero(estimations[0].size());
   for (size_t i = 0; i < estimations.size(); ++i) {
-    Eigen::VectorXd res = estimations[i] - ground_truth[i];
-    res = res.array() * res.array();
-    sum += res;
+    Eigen::VectorXd sqr = (estimations[i] - ground_truth[i]).array().square();
+    sum += sqr;
   }
   
   Eigen::VectorXd mean = sum / estimations.size();

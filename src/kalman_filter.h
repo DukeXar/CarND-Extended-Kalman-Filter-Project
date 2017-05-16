@@ -13,11 +13,9 @@ class KalmanFilter {
   /**
    * @param noise_ax Acceleration process noise over x
    * @param noise_ay Acceleration process noise over y
-   * @param f Transition matrix
    * @param p Initial state covariance matrix
    */
-  KalmanFilter(double noise_ax, double noise_ay, const Eigen::MatrixXd &f,
-               const Eigen::MatrixXd &p);
+  KalmanFilter(double noise_ax, double noise_ay, const Eigen::MatrixXd &p);
 
   /**
    * Prediction Predicts the state and the state covariance
