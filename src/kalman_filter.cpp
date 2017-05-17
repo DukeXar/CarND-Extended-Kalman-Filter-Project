@@ -3,12 +3,12 @@
 #include <iostream>
 
 KalmanFilter::KalmanFilter(double noise_ax, double noise_ay,
-                           const Eigen::MatrixXd &p): state_(), f_(4, 4), Qv_(2, 2) {
+                           const Eigen::MatrixXd &p) : is_set_(false), state_(), f_(4, 4), Qv_(2, 2) {
   Qv_ << noise_ax, 0, 0, noise_ay;
   f_ << 1, 0, 1, 0,
-  0, 1, 0, 1,
-  0, 0, 1, 0,
-  0, 0, 0, 1;
+      0, 1, 0, 1,
+      0, 0, 1, 0,
+      0, 0, 0, 1;
   state_.p = p;
 }
 
@@ -30,6 +30,22 @@ void KalmanFilter::Predict(double dt) {
   state_.p = f_ * state_.p * f_.transpose() + q;
 }
 
-void KalmanFilter::Update(const State &state) {
-  state_ = state;
+void KalmanFilter::Set(const Eigen::VectorXd &x) {
+  state_.x = x;
+  is_set_ = true;
+}
+
+void KalmanFilter::Update(const Eigen::MatrixXd &h, const Eigen::MatrixXd &r, const Eigen::VectorXd &y) {
+  if (!is_set_) {
+    throw std::runtime_error("Should call Set() with initial x");
+  }
+
+  Eigen::MatrixXd ht = h.transpose();
+  Eigen::MatrixXd s = h * state_.p * ht + r;
+  Eigen::MatrixXd k = state_.p * ht * s.inverse();
+
+  auto I = Eigen::MatrixXd::Identity(h.cols(), h.cols());
+
+  state_.x = state_.x + k * y;
+  state_.p = (I - k * h) * state_.p;
 }

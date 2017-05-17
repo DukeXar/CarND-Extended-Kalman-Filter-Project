@@ -6,16 +6,16 @@
 #include "kalman_filter.h"
 
 class LaserUpdater {
-public:
-  LaserUpdater(const Eigen::MatrixXd &h, const Eigen::MatrixXd &r)
-  : h_(h), ht_(h.transpose()), r_(r) {}
-  
-  State Next(const Eigen::VectorXd &measurement, const State &state);
-  State First(const Eigen::VectorXd &measurement, const State &state);
-  
-private:
+ public:
+  explicit LaserUpdater(const Eigen::MatrixXd &r);
+
+  /// Applies the first measurement to the Kalman Filter.
+  void First(const Eigen::VectorXd &measurement, KalmanFilter &kf);
+  /// Update the Kalman Filter with a measurement.
+  void Next(const Eigen::VectorXd &measurement, KalmanFilter &kf);
+
+ private:
   Eigen::MatrixXd h_;
-  Eigen::MatrixXd ht_;
   Eigen::MatrixXd r_;
 };
 

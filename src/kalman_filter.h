@@ -24,11 +24,24 @@ class KalmanFilter {
    */
   void Predict(double dt);
 
-  void Update(const State &state);
-  
+  /**
+   * Sets initial state of the filter with position x
+   */
+  void Set(const Eigen::VectorXd &x);
+
+  /**
+   * Updates state of the filter with measurement difference y
+   * @param h Jacobian or measurement function matrix H
+   * @param r measurement noise covariance matrix
+   * @param y = z - H * state.x
+   */
+  void Update(const Eigen::MatrixXd &h, const Eigen::MatrixXd &r, const Eigen::VectorXd &y);
+
+  /// Returns the state of the filter.
   State state() const { return state_; }
 
  private:
+  bool is_set_;
   State state_;
   Eigen::MatrixXd f_;
   Eigen::MatrixXd Qv_;

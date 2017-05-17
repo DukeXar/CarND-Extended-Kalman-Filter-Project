@@ -3,19 +3,19 @@
 
 #include "measurement_package.h"
 #include "kalman_filter.h"
-
 #include "laser_updater.h"
 #include "radar_updater.h"
-
 
 class FusionEKF {
  public:
   FusionEKF();
-  
+
+  /// Processes the measurement pack with the Kalman Filter.
   void ProcessMeasurement(const MeasurementPackage &measurement_pack);
 
+  /// Returns Kalman Filter state.
   State state() const { return kf_.state(); }
-  
+
  private:
   bool is_initialized_;
   long long previous_timestamp_;
