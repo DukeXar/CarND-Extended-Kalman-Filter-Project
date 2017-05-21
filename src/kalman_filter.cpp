@@ -13,9 +13,6 @@ KalmanFilter::KalmanFilter(double noise_ax, double noise_ay,
 }
 
 void KalmanFilter::Predict(double dt) {
-  f_(0, 2) = dt;
-  f_(1, 3) = dt;
-
   double dt2 = dt * dt;
 
   Eigen::MatrixXd g(4, 2);
@@ -26,6 +23,9 @@ void KalmanFilter::Predict(double dt) {
 
   Eigen::MatrixXd q = g * Qv_ * g.transpose();
 
+  f_(0, 2) = dt;
+  f_(1, 3) = dt;
+  
   state_.x = f_ * state_.x; // + u
   state_.p = f_ * state_.p * f_.transpose() + q;
 }
@@ -41,8 +41,9 @@ void KalmanFilter::Update(const Eigen::MatrixXd &h, const Eigen::MatrixXd &r, co
   }
 
   Eigen::MatrixXd ht = h.transpose();
-  Eigen::MatrixXd s = h * state_.p * ht + r;
-  Eigen::MatrixXd k = state_.p * ht * s.inverse();
+  Eigen::MatrixXd htp = state_.p * ht;
+  Eigen::MatrixXd s = h * htp + r;
+  Eigen::MatrixXd k = htp * s.inverse();
 
   auto I = Eigen::MatrixXd::Identity(h.cols(), h.cols());
 
